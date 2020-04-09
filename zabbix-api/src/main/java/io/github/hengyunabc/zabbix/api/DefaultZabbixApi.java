@@ -1,0 +1,200 @@
+package io.github.hengyunabc.zabbix.api;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.List;
+
+import org.apache.http.*;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.json.simple.JSONArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+
+public class DefaultZabbixApi implements ZabbixApi {
+    private static final Logger logger = LoggerFactory.getLogger(DefaultZabbixApi.class);
+
+    private CloseableHttpClient httpClient;
+
+    private URI uri;
+
+    private volatile String auth;
+
+    public DefaultZabbixApi(String url) {
+        try {
+            uri = new URI(url.trim());
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("url invalid", e);
+        }
+    }
+
+    public DefaultZabbixApi(URI uri) {
+        this.uri = uri;
+    }
+
+    public DefaultZabbixApi(String url, CloseableHttpClient httpClient) {
+        this(url);
+        this.httpClient = httpClient;
+    }
+
+    public DefaultZabbixApi(URI uri, CloseableHttpClient httpClient) {
+        this(uri);
+        this.httpClient = httpClient;
+    }
+
+    @Override
+    public void init() {
+        if (httpClient == null) {
+            httpClient = HttpClients.custom().build();
+        }
+    }
+
+    @Override
+    public void destroy() {
+        if (httpClient != null) {
+            try {
+                httpClient.close();
+            } catch (Exception e) {
+                logger.error("close httpclient error!", e);
+            }
+        }
+    }
+
+    @Override
+    public boolean login(String user, String password) {
+        this.auth = null;
+        Request request = RequestBuilder.newBuilder().paramEntry("user", user).paramEntry("password", password)
+                .method("user.login").build();
+        JSONObject response = call(request);
+        String auth = response.getString("result");
+        if (auth != null && !auth.isEmpty()) {
+            this.auth = auth;
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public String apiVersion() {
+        Request request = RequestBuilder.newBuilder().method("apiinfo.version").build();
+        JSONObject response = call(request);
+        return response.getString("result");
+    }
+
+    @Override
+    public String hostGet(String name) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("host", name);
+        Request request = RequestBuilder.newBuilder().method("host.get").paramEntry("filter", map).build();
+        JSONObject response = call(request);
+        return response.getString("result");
+    }
+
+    @Override
+    public String getItems(String name) {
+        Request request = RequestBuilder.newBuilder().method("item.get").paramEntry("host", name).build();
+        JSONObject response = call(request);
+        return response.getString("result");
+    }
+
+    @Override
+    public String getTriggers(String name, String description) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("description", description);
+        Request request = RequestBuilder.newBuilder().method("trigger.get").paramEntry("host", name).paramEntry("search", map).build();
+        JSONObject response = call(request);
+        return response.getString("result");
+    }
+
+    @Override
+    public String getHostGroups() {
+        Request request = RequestBuilder.newBuilder().method("hostgroup.get").build();
+        JSONObject response = call(request);
+        return response.getString("result");
+    }
+
+    @Override
+    public String getHosts(String groupId) {
+        Request request = RequestBuilder.newBuilder().method("host.get").paramEntry("groupids", groupId).build();
+        JSONObject response = call(request);
+        return response.getString("result");
+    }
+
+    @Override
+    public String createMap(String mapName, int height, int width, List<String> triggerID) {
+        JSONArray arrayFinal = new JSONArray();
+        int counter = 1;
+        int x = 110;
+        for (int i = 0; i < triggerID.size(); i++) {
+            JSONArray arrayWithId = new JSONArray();
+            org.json.simple.JSONObject triggerObject = new org.json.simple.JSONObject();
+            triggerObject.put("triggerid", triggerID.get(i));
+            arrayWithId.add(triggerObject);
+
+
+            org.json.simple.JSONObject objectFinal = new org.json.simple.JSONObject();
+            objectFinal.put("elements", arrayWithId);
+            objectFinal.put("elementtype", "2");
+            objectFinal.put("label", Integer.toString(i + 1));
+            if (counter % 2 == 1) {
+                objectFinal.put("label_location", "3");
+                objectFinal.put("iconid_off", "195");
+                objectFinal.put("iconid_disabled", "188");
+                objectFinal.put("iconid_maintenance", "194");
+                objectFinal.put("iconid_on", "196");
+                objectFinal.put("y", "75");
+                objectFinal.put("x", Integer.toString(x));
+                counter++;
+            } else {
+                objectFinal.put("label_location", "0");
+                objectFinal.put("iconid_off", "200");
+                objectFinal.put("iconid_disabled", "197");
+                objectFinal.put("iconid_maintenance", "199");
+                objectFinal.put("iconid_on", "201");
+                objectFinal.put("y", "150");
+                objectFinal.put("x", Integer.toString(x));
+                x += 50;
+                counter++;
+            }
+
+            arrayFinal.add(objectFinal);
+        }
+
+        Request request = RequestBuilder.newBuilder().method("map.create")
+                .paramEntry("name", mapName).paramEntry("height", height)
+                .paramEntry("width", width).paramEntry("backgroundid", "192")
+                .paramEntry("selements", arrayFinal).build();
+        JSONObject response = call(request);
+        return response.getString("result");
+    }
+
+    @Override
+    public JSONObject call(Request request) {
+        if (request.getAuth() == null) {
+            request.setAuth(this.auth);
+        }
+
+        try {
+            HttpUriRequest httpRequest = org.apache.http.client.methods.RequestBuilder.post().setUri(uri)
+                    .addHeader("Content-Type", "application/json")
+                    .setEntity(new StringEntity(JSON.toJSONString(request), ContentType.APPLICATION_JSON)).build();
+            CloseableHttpResponse response = httpClient.execute(httpRequest);
+            HttpEntity entity = response.getEntity();
+            byte[] data = EntityUtils.toByteArray(entity);
+            return (JSONObject) JSON.parse(data);
+        } catch (IOException e) {
+            throw new RuntimeException("DefaultZabbixApi call exception!", e);
+        }
+    }
+
+}
