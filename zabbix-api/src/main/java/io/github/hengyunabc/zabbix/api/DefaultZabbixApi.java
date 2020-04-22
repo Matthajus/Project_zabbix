@@ -108,10 +108,10 @@ public class DefaultZabbixApi implements ZabbixApi {
     }
 
     @Override
-    public String getTriggers(String name, String description) {
+    public String getTriggers(String hostName, String description) {
         HashMap<String, String> map = new HashMap<>();
         map.put("description", description);
-        Request request = RequestBuilder.newBuilder().method("trigger.get").paramEntry("host", name).paramEntry("search", map).build();
+        Request request = RequestBuilder.newBuilder().method("trigger.get").paramEntry("host", hostName).paramEntry("search", map).build();
         JSONObject response = call(request);
         return response.getString("result");
     }
@@ -131,7 +131,16 @@ public class DefaultZabbixApi implements ZabbixApi {
     }
 
     @Override
-    public String createMap(String mapName, int height, int width, List<String> triggerID) {
+    public String getGraphs(String hostName, String description){
+        HashMap<String, String> map = new HashMap<>();
+        map.put("name", description);
+        Request request = RequestBuilder.newBuilder().method("graph.get").paramEntry("host", hostName).paramEntry("search", map).build();
+        JSONObject response = call(request);
+        return response.getString("result");
+    }
+
+    @Override
+    public String createMap(String mapName, int height, int width, List<String> triggerID, List<String> graphID) {
         JSONArray arrayFinal = new JSONArray();
         int counter = 1;
         int x = 110;
@@ -142,8 +151,21 @@ public class DefaultZabbixApi implements ZabbixApi {
             arrayWithId.add(triggerObject);
 
 
+
+
+            JSONArray arrayWithGraph = new JSONArray();
+            org.json.simple.JSONObject graphObject = new org.json.simple.JSONObject();
+            graphObject.put("name", "Graph");
+
+            String url = "https://monitor.intrak.upjs.sk/charts.php?page=1&groupid=20&hostid=10280&graphid=" + graphID.get(i) + "&action=showgraph";
+            graphObject.put("url", url);
+
+            arrayWithGraph.add(graphObject);
+
+
             org.json.simple.JSONObject objectFinal = new org.json.simple.JSONObject();
             objectFinal.put("elements", arrayWithId);
+            objectFinal.put("urls", arrayWithGraph);
             objectFinal.put("elementtype", "2");
             objectFinal.put("label", Integer.toString(i + 1));
             if (counter % 2 == 1) {
@@ -173,6 +195,7 @@ public class DefaultZabbixApi implements ZabbixApi {
         Request request = RequestBuilder.newBuilder().method("map.create")
                 .paramEntry("name", mapName).paramEntry("height", height)
                 .paramEntry("width", width).paramEntry("backgroundid", "192")
+                .paramEntry("label_type", "0").paramEntry("expandproblem", 0)
                 .paramEntry("selements", arrayFinal).build();
         JSONObject response = call(request);
         return response.getString("result");

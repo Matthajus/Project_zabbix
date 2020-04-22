@@ -1,5 +1,7 @@
+import java.awt.*;
 import java.net.URL;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 
@@ -138,10 +140,30 @@ public class ZabbixMainController {
             int mapHeight = Integer.parseInt(mapHeightTextField.getText());
             int mapWidth = Integer.parseInt(mapWidthTextField.getText());
 
-            if (vytvorMapu(mapName, mapHeight, mapWidth, triggersId) == null)
+            List<String> idGrafov = new ArrayList<>();
+
+            try {
+                HashMap<String, String> graphMap = (HashMap<String, String>) parsujGrafy(vratGrafy(selectedHost, "Gi1"));
+                graphMap.forEach((key, value) -> idGrafov.add(value));
+                Collections.sort(idGrafov);
+            } catch (ParseException parseException) {
+                parseException.printStackTrace();
+            }
+
+            String createdMapJson = vytvorMapu(mapName, mapHeight, mapWidth, triggersId, idGrafov);
+
+            if (createdMapJson == null)
                 new Alert(Alert.AlertType.WARNING, "Map with that name already exists!").showAndWait();
-            else
+            else {
                 new Alert(Alert.AlertType.INFORMATION, "You created a new map.").showAndWait();
+                System.out.println(createdMapJson);
+                String mapID = createdMapJson.substring(15, createdMapJson.length() - 3);
+                String url = "https://monitor.intrak.upjs.sk/zabbix.php?action=map.view&sysmapid=" + mapID;
+                try {
+                    Desktop.getDesktop().browse(new URL(url).toURI());
+                } catch (Exception ignored) {
+                }
+            }
         });
 
 
@@ -156,8 +178,8 @@ public class ZabbixMainController {
     }
 
     // metoda vytorí mapu
-    public String vytvorMapu(String mapName, int height, int width, List<String> triggerID) {
-        return App.zabbixApi.createMap(mapName, height, width, triggerID);
+    public String vytvorMapu(String mapName, int height, int width, List<String> triggerID, List<String> graphID) {
+        return App.zabbixApi.createMap(mapName, height, width, triggerID, graphID);
     }
 
     // metoda vrati trigery, ktore patria zadanemu hostovi s prislusnym popisom
@@ -176,6 +198,25 @@ public class ZabbixMainController {
     // metoda vrati json format
     public String vratHostov(String hostGroupId) {
         return "{ \"result\": " + App.zabbixApi.getHosts(hostGroupId) + " }";
+    }
+
+    // metoda vrati vsetky grafy na zaklade zadaneho hosta a popisu
+    // metoda vrati json format
+    public String vratGrafy(String hostName, String description){
+        return "{ \"result\": " + App.zabbixApi.getGraphs(hostName, description) + " }";
+    }
+
+    // metoda spracuje json format a vrati mapu s grafmi a ich ID
+    public Map<String, String> parsujGrafy(String grafyJson) throws ParseException {
+        Map<String, String> map = new HashMap<>();
+        JSONParser parse = new JSONParser();
+        JSONObject jsonObject = (JSONObject) parse.parse(grafyJson);
+        JSONArray jsonArray = (JSONArray) jsonObject.get("result");
+        for (Object o : jsonArray){
+            JSONObject graf = (JSONObject) o;
+            map.put((String) graf.get("name"), (String) graf.get("graphid"));
+        }
+        return map;
     }
 
     // metoda sparsuje json format a vrati mapu s hostmi a ich ID
