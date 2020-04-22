@@ -26,5 +26,7 @@ public interface ZabbixApi {
 
 	String getHosts(String groupId);
 
-	String createMap(String mapName, int height, int width, List<String> triggerID);
+	String createMap(String mapName, int height, int width, List<String> triggerID, List<String> graphID);
+
+	String getGraphs(String hostName, String description);
 }
