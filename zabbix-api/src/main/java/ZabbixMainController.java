@@ -1,4 +1,5 @@
 import java.awt.*;
+import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 import java.util.List;
@@ -6,11 +7,15 @@ import java.util.stream.Collectors;
 
 
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.AnchorPane;
+import javafx.stage.Stage;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -18,13 +23,16 @@ import org.json.simple.parser.ParseException;
 
 public class ZabbixMainController {
 
+    public static Stage settingsStage = new Stage();
+    public static Map<String, String> mapWithURL = new HashMap<>();
+
+    private String selectedHostGroup;
+    public static String selectedHostGroupId;
+
+    private Map<String, String> hosts;
+
     private String selectedHost;
-
-    @FXML
-    private ResourceBundle resources;
-
-    @FXML
-    private URL location;
+    public static String selectedHostId;
 
     @FXML
     private ComboBox<String> hostGroupComboBox;
@@ -51,6 +59,9 @@ public class ZabbixMainController {
     private Button createMapButton;
 
     @FXML
+    private Button otherSettingsButton;
+
+    @FXML
     void initialize() throws ParseException {
         hostComboBox.setDisable(true);
         confirmButton.setDisable(true);
@@ -71,7 +82,7 @@ public class ZabbixMainController {
             if (isHostGroupComboBoxEmpty) {
                 hostComboBox.setDisable(false);
                 hostComboBox.getItems().clear();
-                String selectedHostGroup = hostGroupComboBox.getValue();
+                selectedHostGroup = hostGroupComboBox.getValue();
                 Map<String, String> hosts = null;
                 try {
                     hosts = parsujHostov(vratHostov(hostGroups.get(selectedHostGroup)));
@@ -79,10 +90,17 @@ public class ZabbixMainController {
                     e.printStackTrace();
                 }
 
+                hostGroups.forEach((key, value) -> {
+                    if (key == selectedHostGroup) selectedHostGroupId = value;
+                });
+                System.out.println(selectedHostGroupId);
+
                 assert hosts != null;
                 for (String key : hosts.keySet()) {
                     hostComboBox.getItems().add(key);
                 }
+
+                this.hosts = hosts;
             }
         });
 
@@ -95,6 +113,14 @@ public class ZabbixMainController {
 
         confirmButton.setOnAction(e -> {
             selectedHost = hostComboBox.getSelectionModel().getSelectedItem();
+
+            hosts.forEach((key, value) -> {
+                if (key == selectedHost) selectedHostId = value;
+            });
+            System.out.println(selectedHostId);
+
+            mapNameTextField.setText(selectedHost);
+
             Map<String, String> map = null;
             try {
                 map = parsujTriggery(vratTriggery(selectedHost, "link down"));
@@ -131,6 +157,24 @@ public class ZabbixMainController {
             } // koniec sortovania
 
             mapSettingsAnchorPane.setVisible(true);
+        });
+
+
+        otherSettingsButton.setOnAction(e -> {
+            ZabbixSettingsController controller = new ZabbixSettingsController();
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("zabbixsettings.fxml"));
+            fxmlLoader.setController(controller);
+            try {
+                Parent parent = fxmlLoader.load();
+                Scene scene = new Scene(parent);
+                settingsStage.setTitle("Map settings");
+                settingsStage.setScene(scene);
+                settingsStage.show();
+                settingsStage.setResizable(false);
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
+
         });
 
         // po klikuti na button vypise ze sme vytvorili mapu v pripade, ze s takym nazvom este nie je
@@ -202,7 +246,7 @@ public class ZabbixMainController {
 
     // metoda vrati vsetky grafy na zaklade zadaneho hosta a popisu
     // metoda vrati json format
-    public String vratGrafy(String hostName, String description){
+    public String vratGrafy(String hostName, String description) {
         return "{ \"result\": " + App.zabbixApi.getGraphs(hostName, description) + " }";
     }
 
@@ -212,7 +256,7 @@ public class ZabbixMainController {
         JSONParser parse = new JSONParser();
         JSONObject jsonObject = (JSONObject) parse.parse(grafyJson);
         JSONArray jsonArray = (JSONArray) jsonObject.get("result");
-        for (Object o : jsonArray){
+        for (Object o : jsonArray) {
             JSONObject graf = (JSONObject) o;
             map.put((String) graf.get("name"), (String) graf.get("graphid"));
         }

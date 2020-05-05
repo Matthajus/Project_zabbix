@@ -15,7 +15,7 @@ import java.io.IOException;
 public class ZabbixLoginController {
 
     @FXML
-    private TextField urlTextField;
+    public TextField urlTextField;
 
     @FXML
     private TextField usernameTextField;
