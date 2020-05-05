@@ -5,6 +5,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.http.*;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -140,7 +141,7 @@ public class DefaultZabbixApi implements ZabbixApi {
     }
 
     @Override
-    public String createMap(String mapName, int height, int width, List<String> triggerID, List<String> graphID) {
+    public String createMap(String mapName, int height, int width, List<String> triggerID, List<String> graphID, Map<String, String> mapWithURL, String selectedGroupID, String selectedHostID) {
         JSONArray arrayFinal = new JSONArray();
         int counter = 1;
         int x = 110;
@@ -154,13 +155,25 @@ public class DefaultZabbixApi implements ZabbixApi {
 
 
             JSONArray arrayWithGraph = new JSONArray();
-            org.json.simple.JSONObject graphObject = new org.json.simple.JSONObject();
-            graphObject.put("name", "Graph");
+            int j = i;
+            mapWithURL.forEach((key, value) -> {
+                String url = value;
+                url = url.replace("{groupid}", selectedGroupID).replace("{hostid}", selectedHostID).replace("{graphid}", graphID.get(j));
+                org.json.simple.JSONObject graphObject = new org.json.simple.JSONObject();
+                graphObject.put("name", key);
+                graphObject.put("url", url);
+                arrayWithGraph.add(graphObject);
 
-            String url = "https://monitor.intrak.upjs.sk/charts.php?page=1&groupid=20&hostid=10280&graphid=" + graphID.get(i) + "&action=showgraph";
-            graphObject.put("url", url);
+            });
 
-            arrayWithGraph.add(graphObject);
+
+//            org.json.simple.JSONObject graphObject = new org.json.simple.JSONObject();
+//            graphObject.put("name", "Graph");
+//
+//            String url = "https://monitor.intrak.upjs.sk/charts.php?page=1&groupid=20&hostid=10280&graphid=" + graphID.get(i) + "&action=showgraph";
+//            graphObject.put("url", url);
+//
+//            arrayWithGraph.add(graphObject);
 
 
             org.json.simple.JSONObject objectFinal = new org.json.simple.JSONObject();

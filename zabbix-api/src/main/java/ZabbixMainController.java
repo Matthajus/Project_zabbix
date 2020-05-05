@@ -27,12 +27,12 @@ public class ZabbixMainController {
     public static Map<String, String> mapWithURL = new HashMap<>();
 
     private String selectedHostGroup;
-    public static String selectedHostGroupId;
+    private String selectedHostGroupId;
 
     private Map<String, String> hosts;
 
     private String selectedHost;
-    public static String selectedHostId;
+    private String selectedHostId;
 
     @FXML
     private ComboBox<String> hostGroupComboBox;
@@ -194,7 +194,7 @@ public class ZabbixMainController {
                 parseException.printStackTrace();
             }
 
-            String createdMapJson = vytvorMapu(mapName, mapHeight, mapWidth, triggersId, idGrafov);
+            String createdMapJson = vytvorMapu(mapName, mapHeight, mapWidth, triggersId, idGrafov, mapWithURL, selectedHostGroupId, selectedHostId);
 
             if (createdMapJson == null)
                 new Alert(Alert.AlertType.WARNING, "Map with that name already exists!").showAndWait();
@@ -207,6 +207,7 @@ public class ZabbixMainController {
                     Desktop.getDesktop().browse(new URL(url).toURI());
                 } catch (Exception ignored) {
                 }
+                mapWithURL = new HashMap<>();
             }
         });
 
@@ -222,8 +223,8 @@ public class ZabbixMainController {
     }
 
     // metoda vytorí mapu
-    public String vytvorMapu(String mapName, int height, int width, List<String> triggerID, List<String> graphID) {
-        return App.zabbixApi.createMap(mapName, height, width, triggerID, graphID);
+    public String vytvorMapu(String mapName, int height, int width, List<String> triggerID, List<String> graphID, Map<String, String> mapWithURL, String selectedGroupID, String selectedHostID) {
+        return App.zabbixApi.createMap(mapName, height, width, triggerID, graphID, mapWithURL, selectedGroupID, selectedHostID);
     }
 
     // metoda vrati trigery, ktore patria zadanemu hostovi s prislusnym popisom

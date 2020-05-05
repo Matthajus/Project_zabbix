@@ -65,6 +65,7 @@ public class ZabbixSettingsController {
                 ZabbixMainController.settingsStage.getScene().getWindow().hide();
             } else {
                 ZabbixMainController.mapWithURL = ulrMap;
+                ZabbixMainController.settingsStage.getScene().getWindow().hide();
             }
 
         });

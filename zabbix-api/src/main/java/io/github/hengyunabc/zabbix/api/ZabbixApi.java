@@ -3,6 +3,7 @@ package io.github.hengyunabc.zabbix.api;
 import com.alibaba.fastjson.JSONObject;
 
 import java.util.List;
+import java.util.Map;
 
 public interface ZabbixApi {
 
@@ -26,7 +27,7 @@ public interface ZabbixApi {
 
 	String getHosts(String groupId);
 
-	String createMap(String mapName, int height, int width, List<String> triggerID, List<String> graphID);
+	String createMap(String mapName, int height, int width, List<String> triggerID, List<String> graphID, Map<String, String> mapWithURL, String selectedGroupID, String SelectedHostID);
 
 	String getGraphs(String hostName, String description);
 }
