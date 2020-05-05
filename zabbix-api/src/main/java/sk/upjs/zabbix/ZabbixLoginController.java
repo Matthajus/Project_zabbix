@@ -1,3 +1,5 @@
+package sk.upjs.zabbix;
+
 import io.github.hengyunabc.zabbix.api.DefaultZabbixApi;
 
 

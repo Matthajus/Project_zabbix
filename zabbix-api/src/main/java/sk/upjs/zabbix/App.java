@@ -1,13 +1,11 @@
-import io.github.hengyunabc.zabbix.api.DefaultZabbixApi;
+package sk.upjs.zabbix;
+
 import io.github.hengyunabc.zabbix.api.ZabbixApi;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-
-import java.awt.*;
-import java.net.URL;
 
 
 public class App extends Application {
@@ -36,16 +34,16 @@ public class App extends Application {
     }
 
 //    public static void before(String url) {
-//        App.zabbixApi = new DefaultZabbixApi(url);
-//        App.zabbixApi.init();
+//        sk.upjs.zabbix.App.zabbixApi = new DefaultZabbixApi(url);
+//        sk.upjs.zabbix.App.zabbixApi.init();
 //    }
 //
 //    public static boolean testLogin(String userName, String userPassword) {
-//        return App.zabbixApi.login(userName, userPassword);
+//        return sk.upjs.zabbix.App.zabbixApi.login(userName, userPassword);
 //    }
 //
 //    public static String vytvorMapu(String mapName, int height, int width) {
-//        return App.zabbixApi.createMap(mapName, height, width);
+//        return sk.upjs.zabbix.App.zabbixApi.createMap(mapName, height, width);
 //    }
 
 }

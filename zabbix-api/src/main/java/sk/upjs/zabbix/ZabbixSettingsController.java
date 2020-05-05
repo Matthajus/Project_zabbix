@@ -1,3 +1,5 @@
+package sk.upjs.zabbix;
+
 import java.util.HashMap;
 import java.util.Map;
 import javafx.fxml.FXML;
