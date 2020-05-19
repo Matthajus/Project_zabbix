@@ -1,13 +1,8 @@
 package sk.upjs.zabbix.api;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.http.*;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
@@ -19,8 +14,12 @@ import org.json.simple.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class DefaultZabbixApi implements ZabbixApi {
     private static final Logger logger = LoggerFactory.getLogger(DefaultZabbixApi.class);
@@ -132,7 +131,7 @@ public class DefaultZabbixApi implements ZabbixApi {
     }
 
     @Override
-    public String getGraphs(String hostName, String description){
+    public String getGraphs(String hostName, String description) {
         HashMap<String, String> map = new HashMap<>();
         map.put("name", description);
         Request request = RequestBuilder.newBuilder().method("graph.get").paramEntry("host", hostName).paramEntry("search", map).build();
@@ -151,8 +150,6 @@ public class DefaultZabbixApi implements ZabbixApi {
             org.json.simple.JSONObject triggerObject = new org.json.simple.JSONObject();
             triggerObject.put("triggerid", triggerID.get(i));
             arrayWithId.add(triggerObject);
-
-
 
 
             JSONArray arrayWithGraph = new JSONArray();
@@ -222,9 +219,11 @@ public class DefaultZabbixApi implements ZabbixApi {
         }
 
         try {
+            String jsonString = JSON.toJSONString(request);
+            StringEntity stringEntity = new StringEntity(jsonString, ContentType.APPLICATION_JSON);
             HttpUriRequest httpRequest = org.apache.http.client.methods.RequestBuilder.post().setUri(uri)
                     .addHeader("Content-Type", "application/json")
-                    .setEntity(new StringEntity(JSON.toJSONString(request), ContentType.APPLICATION_JSON)).build();
+                    .setEntity(stringEntity).build();
             CloseableHttpResponse response = httpClient.execute(httpRequest);
             HttpEntity entity = response.getEntity();
             byte[] data = EntityUtils.toByteArray(entity);
