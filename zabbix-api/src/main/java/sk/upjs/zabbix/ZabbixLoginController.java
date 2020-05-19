@@ -1,6 +1,6 @@
 package sk.upjs.zabbix;
 
-import io.github.hengyunabc.zabbix.api.DefaultZabbixApi;
+import sk.upjs.zabbix.api.DefaultZabbixApi;
 
 
 import javafx.fxml.FXML;

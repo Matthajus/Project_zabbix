@@ -1,4 +1,4 @@
-package io.github.hengyunabc.zabbix.api;
+package sk.upjs.zabbix.api;
 
 import java.io.IOException;
 import java.net.URI;
@@ -141,6 +141,7 @@ public class DefaultZabbixApi implements ZabbixApi {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public String createMap(String mapName, int height, int width, List<String> triggerID, List<String> graphID, Map<String, String> mapWithURL, String selectedGroupID, String selectedHostID) {
         JSONArray arrayFinal = new JSONArray();
         int counter = 1;
