@@ -9,14 +9,19 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
 import org.json.simple.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +60,16 @@ public class DefaultZabbixApi implements ZabbixApi {
     @Override
     public void init() {
         if (httpClient == null) {
-            httpClient = HttpClients.custom().build();
+            try {
+                // TODO: prerobit
+                SSLContext sslContext = new SSLContextBuilder()
+                        .loadTrustMaterial(null, (x509CertChain, authType) -> true)
+                        .build();
+                httpClient = HttpClients.custom().setSSLContext(sslContext).build();
+            } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+                throw new RuntimeException(e);
+            }
+
         }
     }
 
