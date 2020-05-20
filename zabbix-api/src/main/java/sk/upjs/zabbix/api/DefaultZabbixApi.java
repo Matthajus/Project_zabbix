@@ -158,7 +158,7 @@ public class DefaultZabbixApi implements ZabbixApi {
     public String createMap(String mapName, int height, int width, List<String> triggerID, List<String> graphID, Map<String, String> mapWithURL, String selectedGroupID, String selectedHostID) {
         JSONArray arrayFinal = new JSONArray();
         int counter = 1;
-        int x = 110;
+        int x = 10;
         for (int i = 0; i < triggerID.size(); i++) {
             JSONArray arrayWithId = new JSONArray();
             org.json.simple.JSONObject triggerObject = new org.json.simple.JSONObject();
@@ -193,36 +193,40 @@ public class DefaultZabbixApi implements ZabbixApi {
             objectFinal.put("urls", arrayWithGraph);
             objectFinal.put("elementtype", "2");
             objectFinal.put("label", Integer.toString(i + 1));
-            if (counter % 2 == 1) {
+            if (counter % 2 == 1) { // UP
                 objectFinal.put("label_location", "3");
-                objectFinal.put("iconid_off", "195");
+                objectFinal.put("iconid_off", "191");
                 objectFinal.put("iconid_disabled", "188");
-                objectFinal.put("iconid_maintenance", "194");
-                objectFinal.put("iconid_on", "196");
-                objectFinal.put("y", "75");
+                objectFinal.put("iconid_maintenance", "190");
+                objectFinal.put("iconid_on", "189");
+                objectFinal.put("y", "30");
                 objectFinal.put("x", Integer.toString(x));
                 counter++;
-            } else {
+            } else { // DOWN
                 objectFinal.put("label_location", "0");
-                objectFinal.put("iconid_off", "200");
-                objectFinal.put("iconid_disabled", "197");
-                objectFinal.put("iconid_maintenance", "199");
-                objectFinal.put("iconid_on", "201");
-                objectFinal.put("y", "150");
+                objectFinal.put("iconid_off", "196");
+                objectFinal.put("iconid_disabled", "193");
+                objectFinal.put("iconid_maintenance", "195");
+                objectFinal.put("iconid_on", "194");
+                objectFinal.put("y", "70");
                 objectFinal.put("x", Integer.toString(x));
-                x += 50;
+                x += 40;
                 counter++;
             }
 
             arrayFinal.add(objectFinal);
         }
+        System.out.println(arrayFinal.toJSONString());
 
         Request request = RequestBuilder.newBuilder().method("map.create")
-                .paramEntry("name", mapName).paramEntry("height", height)
-                .paramEntry("width", width).paramEntry("backgroundid", "192")
+                .paramEntry("name", mapName)
+                .paramEntry("height", "140")
+                .paramEntry("width", x + 10 + 40)
+                //.paramEntry("backgroundid", "192")
                 .paramEntry("label_type", "0").paramEntry("expandproblem", 0)
                 .paramEntry("selements", arrayFinal).build();
         JSONObject response = call(request);
+        System.out.println(response.toJSONString());
         return response.getString("result");
     }
 
