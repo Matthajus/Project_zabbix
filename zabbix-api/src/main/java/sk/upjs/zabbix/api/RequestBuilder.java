@@ -1,4 +1,4 @@
-package io.github.hengyunabc.zabbix.api;
+package sk.upjs.zabbix.api;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

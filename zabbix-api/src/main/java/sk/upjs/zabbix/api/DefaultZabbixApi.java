@@ -1,26 +1,30 @@
-package io.github.hengyunabc.zabbix.api;
+package sk.upjs.zabbix.api;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.http.*;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
 import org.json.simple.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+import javax.net.ssl.SSLContext;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class DefaultZabbixApi implements ZabbixApi {
     private static final Logger logger = LoggerFactory.getLogger(DefaultZabbixApi.class);
@@ -56,7 +60,16 @@ public class DefaultZabbixApi implements ZabbixApi {
     @Override
     public void init() {
         if (httpClient == null) {
-            httpClient = HttpClients.custom().build();
+            try {
+                // TODO: prerobit
+                SSLContext sslContext = new SSLContextBuilder()
+                        .loadTrustMaterial(null, (x509CertChain, authType) -> true)
+                        .build();
+                httpClient = HttpClients.custom().setSSLContext(sslContext).build();
+            } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+                throw new RuntimeException(e);
+            }
+
         }
     }
 
@@ -132,7 +145,7 @@ public class DefaultZabbixApi implements ZabbixApi {
     }
 
     @Override
-    public String getGraphs(String hostName, String description){
+    public String getGraphs(String hostName, String description) {
         HashMap<String, String> map = new HashMap<>();
         map.put("name", description);
         Request request = RequestBuilder.newBuilder().method("graph.get").paramEntry("host", hostName).paramEntry("search", map).build();
@@ -141,17 +154,16 @@ public class DefaultZabbixApi implements ZabbixApi {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public String createMap(String mapName, int height, int width, List<String> triggerID, List<String> graphID, Map<String, String> mapWithURL, String selectedGroupID, String selectedHostID) {
         JSONArray arrayFinal = new JSONArray();
         int counter = 1;
-        int x = 110;
+        int x = 10;
         for (int i = 0; i < triggerID.size(); i++) {
             JSONArray arrayWithId = new JSONArray();
             org.json.simple.JSONObject triggerObject = new org.json.simple.JSONObject();
             triggerObject.put("triggerid", triggerID.get(i));
             arrayWithId.add(triggerObject);
-
-
 
 
             JSONArray arrayWithGraph = new JSONArray();
@@ -181,36 +193,40 @@ public class DefaultZabbixApi implements ZabbixApi {
             objectFinal.put("urls", arrayWithGraph);
             objectFinal.put("elementtype", "2");
             objectFinal.put("label", Integer.toString(i + 1));
-            if (counter % 2 == 1) {
+            if (counter % 2 == 1) { // UP
                 objectFinal.put("label_location", "3");
-                objectFinal.put("iconid_off", "195");
+                objectFinal.put("iconid_off", "191");
                 objectFinal.put("iconid_disabled", "188");
-                objectFinal.put("iconid_maintenance", "194");
-                objectFinal.put("iconid_on", "196");
-                objectFinal.put("y", "75");
+                objectFinal.put("iconid_maintenance", "190");
+                objectFinal.put("iconid_on", "189");
+                objectFinal.put("y", "30");
                 objectFinal.put("x", Integer.toString(x));
                 counter++;
-            } else {
+            } else { // DOWN
                 objectFinal.put("label_location", "0");
-                objectFinal.put("iconid_off", "200");
-                objectFinal.put("iconid_disabled", "197");
-                objectFinal.put("iconid_maintenance", "199");
-                objectFinal.put("iconid_on", "201");
-                objectFinal.put("y", "150");
+                objectFinal.put("iconid_off", "196");
+                objectFinal.put("iconid_disabled", "193");
+                objectFinal.put("iconid_maintenance", "195");
+                objectFinal.put("iconid_on", "194");
+                objectFinal.put("y", "70");
                 objectFinal.put("x", Integer.toString(x));
-                x += 50;
+                x += 40;
                 counter++;
             }
 
             arrayFinal.add(objectFinal);
         }
+        System.out.println(arrayFinal.toJSONString());
 
         Request request = RequestBuilder.newBuilder().method("map.create")
-                .paramEntry("name", mapName).paramEntry("height", height)
-                .paramEntry("width", width).paramEntry("backgroundid", "192")
+                .paramEntry("name", mapName)
+                .paramEntry("height", "140")
+                .paramEntry("width", x + 10 + 40)
+                //.paramEntry("backgroundid", "192")
                 .paramEntry("label_type", "0").paramEntry("expandproblem", 0)
                 .paramEntry("selements", arrayFinal).build();
         JSONObject response = call(request);
+        System.out.println(response.toJSONString());
         return response.getString("result");
     }
 
@@ -221,9 +237,11 @@ public class DefaultZabbixApi implements ZabbixApi {
         }
 
         try {
+            String jsonString = JSON.toJSONString(request);
+            StringEntity stringEntity = new StringEntity(jsonString, ContentType.APPLICATION_JSON);
             HttpUriRequest httpRequest = org.apache.http.client.methods.RequestBuilder.post().setUri(uri)
                     .addHeader("Content-Type", "application/json")
-                    .setEntity(new StringEntity(JSON.toJSONString(request), ContentType.APPLICATION_JSON)).build();
+                    .setEntity(stringEntity).build();
             CloseableHttpResponse response = httpClient.execute(httpRequest);
             HttpEntity entity = response.getEntity();
             byte[] data = EntityUtils.toByteArray(entity);

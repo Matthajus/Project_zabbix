@@ -1,6 +1,6 @@
 package sk.upjs.zabbix;
 
-import io.github.hengyunabc.zabbix.api.ZabbixApi;
+import sk.upjs.zabbix.api.ZabbixApi;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -29,9 +29,10 @@ public class App extends Application {
 
     }
 
-    public static void main(String[] args){
-        launch(args);
+    public static void main(String[] args) {
+        App.launch(args);
     }
+
 
 //    public static void before(String url) {
 //        sk.upjs.zabbix.App.zabbixApi = new DefaultZabbixApi(url);

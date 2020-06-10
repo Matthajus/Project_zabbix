@@ -114,6 +114,9 @@ public class ZabbixMainController {
         });
 
         confirmButton.setOnAction(e -> {
+            triggers.clear();
+            triggersId.clear();
+
             selectedHost = hostComboBox.getSelectionModel().getSelectedItem();
 
             hosts.forEach((key, value) -> {
@@ -134,7 +137,7 @@ public class ZabbixMainController {
             assert map != null;
             List<String> list = new ArrayList<>();
             map.forEach((key, value) -> {
-                if (!key.contains("Gi1/0/"))
+                if (!(key.contains("Interface G") && key.contains("Link down")))
                     list.add(key);
             });
 
@@ -204,7 +207,7 @@ public class ZabbixMainController {
                 new Alert(Alert.AlertType.INFORMATION, "You created a new map.").showAndWait();
                 System.out.println(createdMapJson);
                 String mapID = createdMapJson.substring(15, createdMapJson.length() - 3);
-                String url = "https://monitor.intrak.upjs.sk/zabbix.php?action=map.view&sysmapid=" + mapID;
+                String url = "https://zabbix.csirt.upjs.sk/zabbix.php?action=map.view&sysmapid=" + mapID;
                 try {
                     Desktop.getDesktop().browse(new URL(url).toURI());
                 } catch (Exception ignored) {
